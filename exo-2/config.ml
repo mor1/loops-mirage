@@ -1,4 +1,4 @@
-1(* This is the configuration file, used by the `mirage` command-line
+(* This is the configuration file, used by the `mirage` command-line
    tool to generate an application.
 
    Usage: mirage configure --help
