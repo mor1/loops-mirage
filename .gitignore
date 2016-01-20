@@ -1,0 +1,15 @@
+*.o
+*.cm*
+*.x[le]
+*.xl.in
+*_libvirt.xml
+_build/
+
+**/key_gen.ml
+**/main.ml
+**/Makefile
+**/log
+**/mir-*
+**/main.native
+
+exo-1/hostname
