@@ -6,25 +6,22 @@ open Lwt.Infix
 module State: sig
 
   type t
-  (** The type for proxy state. *)
+  (** The type for proxy knocking state. *)
 
   val create: control_port:int -> t
-  (** Create a new proxy state. [control] is the control port
-      number. *)
+  (** Create a new proxy state. [control_port] is the control port number. *)
 
   val ports: t -> int list
-  (** [ports t] is the sequence of port knocking stored in the
-      state. *)
+  (** [ports t] is the sequence of port knocking stored in the state. *)
 
   val add: t -> int -> unit
-  (** [add t port] add [port] to the current observed sequence of
-      ports. *)
+  (** [add t port] add [port] to the current observed sequence of ports. *)
 
   val reset: t -> unit
   (** [reset t] resets the proxy state. *)
 
   val control_port: t -> int
-  (** [control_port t] is [t]'s control port number. *)
+  (** [control_port t] retrieves the control port number. *)
 
 end = struct
 
@@ -43,7 +40,8 @@ end
 module Hostname (C: CONSOLE): sig
 
   val decode: C.t -> State.t -> string option
-  (** Resolve port knocks into hostname. *)
+  (** [decode c st] resolve port knocks stored in proxy [!State] [st] into
+      hostname. [c] is a console for log output. *)
 
 end = struct
 
@@ -165,11 +163,12 @@ module Main (C: CONSOLE) (S: STACKV4) = struct
     >>= fun () ->
     log c " == exercice 2 == " >>= fun () ->
     log c "My IP address is: %s" (get_ip s) >>= fun () ->
-    let control_port = 999 in
+    let control_port = 19999 in
     let t = State.create ~control_port in
     (* register an handler for all the ports we are interested in *)
     for i = 0 to 256 do
       let port = control_port + i in
+      Printf.printf "  port=%d" port;
       S.listen_tcpv4 s ~port (update c t port)
     done;
     S.listen_tcpv4 s ~port:80 (reply_one c t);

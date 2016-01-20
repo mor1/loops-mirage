@@ -6,25 +6,22 @@ open Lwt.Infix
 module State: sig
 
   type t
-  (** The type for proxy state. *)
+  (** The type for proxy knocking state. *)
 
   val create: control_port:int -> t
-  (** Create a new proxy state. [control] is the control port
-      number. *)
+  (** Create a new proxy state. [control_port] is the control port number. *)
 
   val ports: t -> int list
-  (** [ports t] is the sequence of port knocking stored in the
-      state. *)
+  (** [ports t] is the sequence of port knocking stored in the state. *)
 
   val add: t -> int -> unit
-  (** [add t port] add [port] to the current observed sequence of
-      ports. *)
+  (** [add t port] add [port] to the current observed sequence of ports. *)
 
   val reset: t -> unit
   (** [reset t] resets the proxy state. *)
 
   val control_port: t -> int
-  (** [control_port t] is [t]'s control port number. *)
+  (** [control_port t] retrieves the control port number. *)
 
 end = struct
 
@@ -43,7 +40,8 @@ end
 module Hostname (C: CONSOLE): sig
 
   val decode: C.t -> State.t -> string option
-  (** Resolve port knocks into hostname. *)
+  (** [decode c st] resolves port knocks stored in proxy [!State] [st] into
+      hostname. [c] is a console for log output. *)
 
 end = struct
 
@@ -51,8 +49,8 @@ end = struct
 
   (* the ports table *)
   let table = [
-    [1]   , "reseau-loops.github.io";
-    [1; 2], "unikernel.org";
+    [1]   , "unikernel.org";
+    [1; 2], "mirage.io";
   ]
 
   let decode c t =
@@ -121,6 +119,11 @@ end
 module Main (C: CONSOLE) (S: STACKV4) = struct
 
   module Proxy = Proxy(C)(S)
+  module Hostname = Hostname(C)
+
+  type request =
+    | Reset
+    | Unknown of string
 
   (* helpers *)
   let log c fmt = Printf.ksprintf (C.log_s c) fmt
@@ -139,8 +142,6 @@ module Main (C: CONSOLE) (S: STACKV4) = struct
     log c "Found port combination for host %s!" host >|= fun () ->
     Proxy.process c s con host
 
-  module Hostname = Hostname(C)
-
   let not_found c con =
     log c "No port combination found!" >>= fun () ->
     let buf =
@@ -158,10 +159,6 @@ module Main (C: CONSOLE) (S: STACKV4) = struct
     match Hostname.decode c t with
     | Some host -> proxy c s con host
     | None      -> not_found c con
-
-  type request =
-    | Reset
-    | Unknown of string
 
   let string_of_request buf =
     match String.trim (Cstruct.to_string buf) with
@@ -196,18 +193,26 @@ module Main (C: CONSOLE) (S: STACKV4) = struct
           \    --------------------\n\
           \    |   Hello Loops!   |\n\
           \    |                  |\n\
-          \    |   /exercice 3/   |\n\
+          \    |   /exercise 3/   |\n\
           \    --------------------\n"
+
     >>= fun () ->
-    log c " == exercice 2 == " >>= fun () ->
-    log c "My IP address is: %s" (get_ip s) >>= fun () ->
-    let control_port = 999 in
+    log c " == exercise 3 == "
+
+    >>= fun () ->
+    log c "My IP address is: %s" (get_ip s)
+
+    >>= fun () ->
+    let control_port = 32000 in
     let t = State.create ~control_port in
-    (* register an handler for all the ports we are interested in *)
+
+    (* register a knock handler for all the ports we are interested in *)
     for i = 0 to 256 do
       let port = control_port + i in
       S.listen_tcpv4 s ~port (update c t port)
     done;
+
+    (* start the web proxy on 80/TCP *)
     S.listen_tcpv4 s ~port:80 (reply_one c s t);
     S.listen s
 

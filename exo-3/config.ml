@@ -8,14 +8,11 @@ open Mirage
 
 (* Declare where the unikernel code is *)
 let main = foreign
-    "Unikernel.Main"                               (* the name of the functor *)
-    (console @-> stackv4 @-> job)                    (* the functor signature *)
+    "Unikernel.Main"              (* the name of the functor *)
+    (console @-> stackv4 @-> job) (* the functor signature *)
 
-(* The additional OPAM packages needed. *)
-let packages =  ["mirage-http"]
-
-(* The additional ocamlfind libraries needed. *)
-let libraries = ["mirage-http"]
+let packages =  ["mirage-http"] (* additional OPAM packages needed *)
+let libraries = ["mirage-http"] (* additional OCamlfind libraries needed *)
 
 (* Register the application *)
 let () =
